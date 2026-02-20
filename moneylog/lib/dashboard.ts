@@ -55,6 +55,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     fetchedAt: new Date().toISOString(),
     fixedExpenseByMinor: toBreakdown(fixedExpenseRows),
     investmentByMinor: toBreakdown(investmentRows),
+    incomeRows: sortByAmount(incomeRows),
     oneTimeIncomeRows: sortByAmount(oneTimeIncomeRows),
     oneTimeExpenseRows: sortByAmount(oneTimeExpenseRows),
     fixedExpenseRows: sortByAmount(fixedExpenseRows),

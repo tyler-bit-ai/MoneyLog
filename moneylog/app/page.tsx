@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { BudgetTable } from "@/app/components/budget-table";
 import { ChecklistPanel } from "@/app/components/checklist-panel";
+import { CollapsibleSection } from "@/app/components/collapsible-section";
 import { ExpensePieChart } from "@/app/components/expense-pie-chart";
 import { KpiCard } from "@/app/components/kpi-card";
 import { RefreshButton } from "@/app/components/refresh-button";
@@ -22,9 +23,6 @@ export default async function Home() {
   }
 
   const snapshot = await getDashboardSnapshot();
-  const oneTimeBalance =
-    snapshot.oneTimeIncomeRows.reduce((acc, row) => acc + (row.amount ?? 0), 0) -
-    snapshot.oneTimeExpenseRows.reduce((acc, row) => acc + (row.amount ?? 0), 0);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
@@ -68,21 +66,22 @@ export default async function Home() {
         <ChecklistPanel cards={snapshot.checklist.cards} transfers={snapshot.checklist.transfers} />
       </section>
 
+      <section className="mt-3">
+        <BudgetTable title="월수입 상세" rows={snapshot.incomeRows} />
+      </section>
+
       <section className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-2">
         <BudgetTable title="고정지출 상세" rows={snapshot.fixedExpenseRows} />
         <BudgetTable title="투자 상세" rows={snapshot.investmentRows} />
       </section>
 
       <section className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-2">
-        <BudgetTable title="일회성 수입" rows={snapshot.oneTimeIncomeRows} />
-        <BudgetTable title="일회성 지출" rows={snapshot.oneTimeExpenseRows} />
-      </section>
-
-      <section className="mt-3 card">
-        <h3 className="text-base font-semibold">일회성 순수지</h3>
-        <p className={`mt-2 text-2xl font-semibold ${oneTimeBalance >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
-          {oneTimeBalance.toLocaleString("ko-KR")}원
-        </p>
+        <CollapsibleSection title="일회성 수입" count={snapshot.oneTimeIncomeRows.length} defaultOpen={false}>
+          <BudgetTable title="일회성 수입 상세" rows={snapshot.oneTimeIncomeRows} />
+        </CollapsibleSection>
+        <CollapsibleSection title="일회성 지출" count={snapshot.oneTimeExpenseRows.length} defaultOpen={false}>
+          <BudgetTable title="일회성 지출 상세" rows={snapshot.oneTimeExpenseRows} />
+        </CollapsibleSection>
       </section>
     </main>
   );

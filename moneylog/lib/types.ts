@@ -53,6 +53,7 @@ export type DashboardSnapshot = {
   fetchedAt: string;
   fixedExpenseByMinor: CategoryBreakdown[];
   investmentByMinor: CategoryBreakdown[];
+  incomeRows: BudgetRow[];
   oneTimeIncomeRows: BudgetRow[];
   oneTimeExpenseRows: BudgetRow[];
   fixedExpenseRows: BudgetRow[];
