@@ -15,8 +15,12 @@ npm run dev
 - `GOOGLE_SHEET_ID`: 구글 스프레드시트 ID
 - `GOOGLE_SHEET_GID_BUDGET`: `수입지출항목` 탭 gid
 - `GOOGLE_SHEET_GID_CHECKLIST`: `챙겨야하는 것` 탭 gid
+- `GOOGLE_CARD_PERF_SHEET_ID`: 신용카드 월실적 스프레드시트 ID
+- `GOOGLE_CARD_PERF_SHEET_GID`: 신용카드 월실적 탭 gid
 - `DASHBOARD_PASSWORD`: 로그인 비밀번호
 - `SESSION_SECRET`: 세션 서명 시크릿
+
+신용카드 실적은 `Asia/Seoul` 현재월 컬럼만 조회하며 상태를 `OK / NOK / 미입력`으로 표시합니다.
 
 ## 3) 주요 경로
 

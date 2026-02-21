@@ -12,13 +12,14 @@ type Props = {
   title: string;
   rows: BudgetRow[];
   emptyText?: string;
+  totalAmount?: number;
 };
 
 function compareMinor(a: string, b: string): number {
   return (a || "").localeCompare(b || "", "ko");
 }
 
-export function BudgetTable({ title, rows, emptyText = "데이터가 없습니다." }: Props) {
+export function BudgetTable({ title, rows, emptyText = "데이터가 없습니다.", totalAmount }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("amount");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
 
@@ -70,7 +71,12 @@ export function BudgetTable({ title, rows, emptyText = "데이터가 없습니�
   return (
     <article className="card">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-base font-semibold text-[var(--ink)]">{title}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-semibold text-[var(--ink)]">{title}</h3>
+          {typeof totalAmount === "number" ? (
+            <span className="text-sm font-semibold text-[var(--ink)]">{formatKrw(totalAmount)}</span>
+          ) : null}
+        </div>
         <span className="text-xs text-[var(--muted)]">{rows.length}건</span>
       </div>
       {rows.length === 0 ? (

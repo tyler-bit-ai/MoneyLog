@@ -23,3 +23,7 @@ export const SHEET_GID_BUDGET = Number(process.env.GOOGLE_SHEET_GID_BUDGET ?? 0)
 export const SHEET_GID_CHECKLIST = Number(
   process.env.GOOGLE_SHEET_GID_CHECKLIST ?? 399501102,
 );
+
+export const CARD_PERF_SHEET_ID =
+  process.env.GOOGLE_CARD_PERF_SHEET_ID ?? "1ADai_LNs-cu3Whxtu5qZBlmAMQKgIEvAFiT8wdCUD50";
+export const CARD_PERF_SHEET_GID = Number(process.env.GOOGLE_CARD_PERF_SHEET_GID ?? 0);

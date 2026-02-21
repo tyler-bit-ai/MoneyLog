@@ -28,6 +28,23 @@ export type CardTargetRow = {
   note: string;
 };
 
+export type CardMonthlyStatus = "ok" | "nok" | "empty";
+
+export type CardMonthlyPerformanceRow = {
+  category: string;
+  cardName: string;
+  requirement: string;
+  reason: string;
+  status: CardMonthlyStatus;
+};
+
+export type CardMonthlyPerformanceSummary = {
+  okCount: number;
+  nokCount: number;
+  emptyCount: number;
+  completionRate: number;
+};
+
 export type TransferTodoRow = {
   name: string;
   targetAmount: number;
@@ -61,5 +78,12 @@ export type DashboardSnapshot = {
   checklist: {
     cards: CardTargetRow[];
     transfers: TransferTodoRow[];
+  };
+  cardPerformance: {
+    year: number;
+    month: number;
+    label: string;
+    summary: CardMonthlyPerformanceSummary;
+    rows: CardMonthlyPerformanceRow[];
   };
 };

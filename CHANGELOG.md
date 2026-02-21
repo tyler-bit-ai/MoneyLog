@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## 2026-02-21
+
+### 요청 단위 요약
+- 신용카드 월별 실적 시트를 별도 ENV로 연동하고 KST 현재월만 조회하도록 추가했습니다.
+- 대시보드 우측 영역에 `신용카드 실적` 패널을 추가해 `OK/NOK/미입력`과 달성률을 함께 표시합니다.
+- 스냅샷 타입/API에 `cardPerformance` 데이터를 확장했습니다.
+
+### 변경 파일
+- `.env.example`
+- `README.md`
+- `lib/env.ts`
+- `lib/types.ts`
+- `lib/sheets.ts`
+- `lib/dashboard.ts`
+- `app/components/card-performance-panel.tsx`
+- `app/page.tsx`
+- `CHANGELOG.md`
+
 ## 2026-02-20
 
 ### 요청 단위 요약

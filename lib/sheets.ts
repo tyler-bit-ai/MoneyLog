@@ -1,9 +1,16 @@
 import { parse } from "csv-parse/sync";
 
-import { SHEET_GID_BUDGET, SHEET_GID_CHECKLIST, SHEET_ID } from "@/lib/env";
+import {
+  CARD_PERF_SHEET_GID,
+  CARD_PERF_SHEET_ID,
+  SHEET_GID_BUDGET,
+  SHEET_GID_CHECKLIST,
+  SHEET_ID,
+} from "@/lib/env";
 import { maskSensitiveText } from "@/lib/mask";
 import {
   BudgetRow,
+  CardMonthlyPerformanceRow,
   CardTargetRow,
   SectionType,
   TransferTodoRow,
@@ -43,12 +50,12 @@ function toSectionType(major: string): SectionType {
   }
 }
 
-function makeCsvUrl(gid: number): string {
-  return `${BASE_URL}/${SHEET_ID}/export?format=csv&gid=${gid}`;
+function makeCsvUrl(sheetId: string, gid: number): string {
+  return `${BASE_URL}/${sheetId}/export?format=csv&gid=${gid}`;
 }
 
-async function fetchCsv(gid: number): Promise<string> {
-  const response = await fetch(makeCsvUrl(gid), {
+async function fetchCsv(gid: number, sheetId = SHEET_ID): Promise<string> {
+  const response = await fetch(makeCsvUrl(sheetId, gid), {
     next: {
       revalidate: 300,
     },
@@ -59,6 +66,61 @@ async function fetchCsv(gid: number): Promise<string> {
   }
 
   return response.text();
+}
+
+function normalizeHeaderText(value: string): string {
+  return value.trim().replaceAll(" ", "");
+}
+
+function parseYearMonthFromHeader(value: string): { shortYear: number; month: number } | null {
+  const normalized = normalizeHeaderText(value).replaceAll("년", ".");
+  const patterns = [/^(\d{2})\.(\d{1,2})월$/, /^(\d{2})(\d{1,2})월$/];
+
+  for (const pattern of patterns) {
+    const matched = normalized.match(pattern);
+    if (!matched) {
+      continue;
+    }
+    const shortYear = Number(matched[1]);
+    const month = Number(matched[2]);
+    if (!Number.isInteger(shortYear) || !Number.isInteger(month) || month < 1 || month > 12) {
+      continue;
+    }
+    return { shortYear, month };
+  }
+
+  return null;
+}
+
+function getCurrentKstYearMonth(): { year: number; shortYear: number; month: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "numeric",
+  }).formatToParts(new Date());
+
+  const yearPart = parts.find((part) => part.type === "year")?.value;
+  const monthPart = parts.find((part) => part.type === "month")?.value;
+
+  const year = Number(yearPart);
+  const month = Number(monthPart);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month)) {
+    throw new Error("Failed to resolve current KST year/month");
+  }
+
+  return { year, shortYear: year % 100, month };
+}
+
+function normalizeCardStatus(raw: string): "ok" | "nok" | "empty" {
+  const normalized = raw.trim().toUpperCase();
+  if (normalized === "OK") {
+    return "ok";
+  }
+  if (normalized === "NOK") {
+    return "nok";
+  }
+  return "empty";
 }
 
 export async function fetchBudgetRows(): Promise<BudgetRow[]> {
@@ -166,4 +228,97 @@ export async function fetchChecklist(): Promise<{
   });
 
   return { cards, transfers };
+}
+
+export async function fetchCardMonthlyPerformance(): Promise<{
+  year: number;
+  month: number;
+  label: string;
+  rows: CardMonthlyPerformanceRow[];
+}> {
+  const { year, shortYear, month } = getCurrentKstYearMonth();
+  const label = `${shortYear}.${month}월`;
+
+  const csv = await fetchCsv(CARD_PERF_SHEET_GID, CARD_PERF_SHEET_ID);
+  const rows = parse(csv, {
+    relax_quotes: true,
+    relax_column_count: true,
+  }) as string[][];
+
+  let headerRowIndex = -1;
+  let monthColIndex = -1;
+
+  rows.forEach((cols, rowIndex) => {
+    cols.forEach((cell, colIndex) => {
+      const ym = parseYearMonthFromHeader(cell ?? "");
+      if (headerRowIndex >= 0 || !ym) {
+        return;
+      }
+      if (ym.shortYear === shortYear && ym.month === month) {
+        headerRowIndex = rowIndex;
+        monthColIndex = colIndex;
+      }
+    });
+  });
+
+  if (headerRowIndex < 0 || monthColIndex < 0) {
+    return {
+      year,
+      month,
+      label: `${label} (미발견)`,
+      rows: [],
+    };
+  }
+
+  const headerRow = rows[headerRowIndex] ?? [];
+  const categoryCol = headerRow.findIndex((cell) => normalizeHeaderText(cell ?? "") === "구분");
+  const requirementCol = headerRow.findIndex((cell) => normalizeHeaderText(cell ?? "") === "실적");
+  const reasonCol = headerRow.findIndex((cell) => normalizeHeaderText(cell ?? "") === "사유");
+
+  const resolvedCategoryCol = categoryCol >= 0 ? categoryCol : 1;
+  const resolvedCardNameCol = resolvedCategoryCol + 1;
+  const resolvedRequirementCol = requirementCol >= 0 ? requirementCol : 3;
+  const resolvedReasonCol = reasonCol >= 0 ? reasonCol : 4;
+
+  const parsedRows: CardMonthlyPerformanceRow[] = [];
+  let currentCategory = "";
+
+  rows.forEach((cols, rowIndex) => {
+    if (rowIndex <= headerRowIndex) {
+      return;
+    }
+
+    const categoryRaw = (cols[resolvedCategoryCol] ?? "").trim();
+    const cardName = (cols[resolvedCardNameCol] ?? "").trim();
+    const requirement = (cols[resolvedRequirementCol] ?? "").trim();
+    const reason = maskSensitiveText((cols[resolvedReasonCol] ?? "").trim());
+    const statusRaw = (cols[monthColIndex] ?? "").trim();
+
+    if (!categoryRaw && !cardName && !requirement && !reason && !statusRaw) {
+      return;
+    }
+
+    if (categoryRaw) {
+      currentCategory = categoryRaw;
+    }
+
+    if (!cardName) {
+      return;
+    }
+
+    parsedRows.push({
+      category: currentCategory,
+      cardName,
+      requirement,
+      reason,
+      status: normalizeCardStatus(statusRaw),
+    });
+  });
+
+  return {
+    year,
+    month,
+    label,
+    rows: parsedRows,
+  };
 }

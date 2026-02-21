@@ -1,5 +1,5 @@
-import { fetchBudgetRows, fetchChecklist } from "@/lib/sheets";
-import { BudgetRow, CategoryBreakdown, DashboardSnapshot } from "@/lib/types";
+import { fetchBudgetRows, fetchCardMonthlyPerformance, fetchChecklist } from "@/lib/sheets";
+import { BudgetRow, CardMonthlyPerformanceSummary, CategoryBreakdown, DashboardSnapshot } from "@/lib/types";
 
 function sumAmounts(rows: BudgetRow[]): number {
   return rows.reduce((acc, row) => acc + (row.amount ?? 0), 0);
@@ -31,8 +31,28 @@ function sortByAmount(rows: BudgetRow[]): BudgetRow[] {
     .sort((a, b) => (b.amount ?? 0) - (a.amount ?? 0));
 }
 
+function summarizeCardPerformance(
+  rows: DashboardSnapshot["cardPerformance"]["rows"],
+): CardMonthlyPerformanceSummary {
+  const okCount = rows.filter((row) => row.status === "ok").length;
+  const nokCount = rows.filter((row) => row.status === "nok").length;
+  const emptyCount = rows.filter((row) => row.status === "empty").length;
+  const completionDenominator = okCount + nokCount;
+
+  return {
+    okCount,
+    nokCount,
+    emptyCount,
+    completionRate: completionDenominator > 0 ? okCount / completionDenominator : 0,
+  };
+}
+
 export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
-  const [budgetRows, checklist] = await Promise.all([fetchBudgetRows(), fetchChecklist()]);
+  const [budgetRows, checklist, cardPerformance] = await Promise.all([
+    fetchBudgetRows(),
+    fetchChecklist(),
+    fetchCardMonthlyPerformance(),
+  ]);
 
   const incomeRows = budgetRows.filter((row) => row.sectionType === "income");
   const fixedExpenseRows = budgetRows.filter((row) => row.sectionType === "fixed_expense");
@@ -63,6 +83,13 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     checklist: {
       cards: checklist.cards.sort((a, b) => b.targetAmount - a.targetAmount),
       transfers: checklist.transfers.sort((a, b) => b.targetAmount - a.targetAmount),
+    },
+    cardPerformance: {
+      year: cardPerformance.year,
+      month: cardPerformance.month,
+      label: cardPerformance.label,
+      rows: cardPerformance.rows,
+      summary: summarizeCardPerformance(cardPerformance.rows),
     },
   };
 }

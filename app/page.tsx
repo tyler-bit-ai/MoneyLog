@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { BudgetTable } from "@/app/components/budget-table";
+import { CardPerformancePanel } from "@/app/components/card-performance-panel";
 import { ChecklistPanel } from "@/app/components/checklist-panel";
 import { CollapsibleSection } from "@/app/components/collapsible-section";
 import { ExpensePieChart } from "@/app/components/expense-pie-chart";
@@ -66,13 +67,18 @@ export default async function Home() {
         <ChecklistPanel cards={snapshot.checklist.cards} transfers={snapshot.checklist.transfers} />
       </section>
 
-      <section className="mt-3">
-        <BudgetTable title="월수입 상세" rows={snapshot.incomeRows} />
+      <section className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-2">
+        <CardPerformancePanel cardPerformance={snapshot.cardPerformance} />
+        <BudgetTable title="월수입 상세" rows={snapshot.incomeRows} totalAmount={snapshot.kpis.monthlyIncome} />
       </section>
 
       <section className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-2">
-        <BudgetTable title="고정지출 상세" rows={snapshot.fixedExpenseRows} />
-        <BudgetTable title="투자 상세" rows={snapshot.investmentRows} />
+        <BudgetTable
+          title="고정지출 상세"
+          rows={snapshot.fixedExpenseRows}
+          totalAmount={snapshot.kpis.monthlyFixedExpense}
+        />
+        <BudgetTable title="투자 상세" rows={snapshot.investmentRows} totalAmount={snapshot.kpis.monthlyInvestment} />
       </section>
 
       <section className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-2">
